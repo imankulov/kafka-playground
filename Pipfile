@@ -9,9 +9,16 @@ black = "*"
 
 [packages]
 click = "*"
+confluent-kafka = {extras = ["avro"],version = "*"}
+ipython = "*"
+kazoo = "*"
+zk-shell = "*"
 
 [requires]
 python_version = "3.7"
 
 [pipenv]
 allow_prereleases = true
+
+[scripts]
+shell = "ipython --ext=autoreload --InteractiveShellApp.exec_lines='[\"%autoreload 2\"]'"
