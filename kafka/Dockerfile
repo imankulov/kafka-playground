@@ -1,7 +1,7 @@
 FROM openjdk:8-jre-slim
 
 ENV KAFKA_BROKER_ID=0 \
-    KAFKA_ZOOKEEPER_CONNECT=zoo1:2181/kafka,zoo2:2181/kafka,zoo3:2181/kafka \
+    KAFKA_ZOOKEEPER_CONNECT=zoo1:2181,zoo2:2181,zoo3:2181/kafka \
     KAFKA_LOG_DIRS=/kafka-logs
 
 # Add a user with an explicit UID/GID and create necessary directories
