@@ -13,60 +13,35 @@ docker-compose up -d
 This will start three zookeeper instances, and the first zookeeper instance
 will expose its port as 127.0.0.1:2181.
 
-It will also start two Kafka instances. First instance will expose
-its port as 127.0.0.1:9092 and the second one will expose it as
-127.0.0.1:9093.
+It will also start two Kafka instances. They listen for the port 0.0.0.0:9092,
+none of them is exposed outside.
+
+Also it will start a "client" host with some pre-installed libraries.
+
 
 Wrappers
 --------
 
 There are wrappers for most command-line Kafka-related utilities. They are
 stored in a "wrappers" directory and what they do is they simply run the
-binary with the same name on the kafka1 host.
-
-You can add them to your session PATH
-
-```
-PATH=$PATH:$PWD/wrappers
-```
+binary with the same name either on the "kafka1" host or on the "client" host.
 
 One example. That's how you can see the list of Kafka topics
 
 ```
-kafka-topics.sh --zookeeper=zoo1:2181/kafka --list
-```
-
-
-Managing it
------------
-
-There's a command manage.py, sort of our playground-specific Makefile. It
-depends on `click` Python library at the moment.
-
-Install all dependencies with pipenv
-
-```
-pipenv install
-```
-
-Then run a command with `pipenv run ./manage.py [command]`. At the moment
-there's only one available command: the command to open command line Zookeeper
-client.
-
-```
-pipenv run ./manage.py zkcli
+./wrappers/kafka-topics.sh --zookeeper=zoo1:2181/kafka --list
 ```
 
 Kafka brokers and Zookeeper
 ---------------------------
 
-Run zookeeper shell with `pipenv run zk-shell 127.0.0.1:2181`. Move to
+Run zookeeper shell with `./wrappers/zk-shell zoo1`. Move to
 directory "kafka" and look around.
 
 Get the list of active brokers.
 
 ```
-(CONNECTED [127.0.0.1:2181]) /kafka> tree brokers
+(CONNECTED [zoo1]) /kafka> tree brokers
 .
 ├── ids
 │   ├── 1
@@ -74,7 +49,7 @@ Get the list of active brokers.
 ├── topics
 ├── seqid
 
-(CONNECTED [127.0.0.1:2181]) /kafka> get brokers/ids/1
+(CONNECTED [zoo1]) /kafka> get brokers/ids/1
 {"listener_security_protocol_map":{"PLAINTEXT":"PLAINTEXT"},"endpoints":["PLAINTEXT://1b9aa4ca7e24:9092"],"jmx_port":-1,"host":"1b9aa4ca7e24","timestamp":"1567061408756","port":9092,"version":4}
 ```
 
@@ -84,10 +59,10 @@ automatically removed as soon as Zookeeper loses connection with Kafka server.
 See who acts as the controller.
 
 ```
-(CONNECTED [127.0.0.1:2181]) /kafka> get controller
+(CONNECTED [zoo1]) /kafka> get controller
 {"version":1,"brokerid":2,"timestamp":"1567061407902"}
 
-(CONNECTED [127.0.0.1:2181]) /kafka> get controller_epoch
+(CONNECTED [zoo1]) /kafka> get controller_epoch
 2
 ```
 
@@ -101,7 +76,7 @@ docker-compose stop kafka2
 Shortly afterwards broker 2 disappears from the list of brokers:
 
 ```
-(CONNECTED [127.0.0.1:2181]) /kafka> tree brokers
+(CONNECTED [zoo1]) /kafka> tree brokers
 .
 ├── ids
 │   ├── 1
@@ -113,9 +88,9 @@ Also, a new controller was re-elected. Notice that epoch number has also
 been updated. We have a broker with ID 1, and epoch is updated from 2 to three.
 
 ```
-(CONNECTED [127.0.0.1:2181]) /kafka> get controller
+(CONNECTED [zoo1]) /kafka> get controller
 {"version":1,"brokerid":1,"timestamp":"1567061694914"}
-(CONNECTED [127.0.0.1:2181]) /kafka> get controller_epoch
+(CONNECTED [zoo1]) /kafka> get controller_epoch
 3
 ```
 
@@ -143,7 +118,7 @@ zk-shell will reflect the changes. A new structure topics/playground
 will be added to kafka/brokers.
 
 ```
-(CONNECTED [127.0.0.1:2181]) /> tree /kafka/brokers
+(CONNECTED [zoo1]) /> tree /kafka/brokers
 .
 ├── ids
 │   ├── 1
@@ -167,14 +142,14 @@ Here "isr" means "in-sync replicas". Leader is the broker who accepts writes
 to a specific partition, and the rest of brokers are used for the replication.
 
 ```
-(CONNECTED [127.0.0.1:2181]) /> cd kafka/brokers/topics/playground/partitions
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 0/state
+(CONNECTED [zoo1]) /> cd kafka/brokers/topics/playground/partitions
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 0/state
 {"controller_epoch":7,"leader":2,"version":1,"leader_epoch":0,"isr":[2,1]}
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 1/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 1/state
 {"controller_epoch":7,"leader":1,"version":1,"leader_epoch":0,"isr":[1,2]}
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 2/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 2/state
 {"controller_epoch":7,"leader":2,"version":1,"leader_epoch":0,"isr":[2,1]}
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 3/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 3/state
 {"controller_epoch":7,"leader":1,"version":1,"leader_epoch":0,"isr":[1,2]}
 ```
 
@@ -188,13 +163,13 @@ Looks like a new leader for each partition was assigned. Number of in-sync
 replicas has also been updated.
 
 ```
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 0/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 0/state
 {"controller_epoch":8,"leader":1,"version":1,"leader_epoch":2,"isr":[1]}
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 1/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 1/state
 {"controller_epoch":8,"leader":1,"version":1,"leader_epoch":1,"isr":[1]}
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 2/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 2/state
 {"controller_epoch":8,"leader":1,"version":1,"leader_epoch":2,"isr":[1]}
-(CONNECTED [127.0.0.1:2181]) /kafka/brokers/topics/playground/partitions> get 3/state
+(CONNECTED [zoo1]) /kafka/brokers/topics/playground/partitions> get 3/state
 {"controller_epoch":8,"leader":1,"version":1,"leader_epoch":1,"isr":[1]}
 ```
 
@@ -298,3 +273,39 @@ partitions, one of the consumers will stay idle.
 For the record, notice that as soon as you start consuming events a new topic
 `__consumer_offsets` with 50 partitions will be created. It's used to keep
 track of consumer last seen message.
+
+Kafka and Python
+----------------
+
+Exposing Kafka from Docker instances to the main host is a non-trivial task,
+because they register themselves in Zookeepers under their canonical name,
+which are only available from inside containers. In principle, looks like
+it's doable, but requires careful configuration of "listeners" and
+"advertised.listeners" broker options, and it's boring and non-intuitive.
+
+So that's why there's another host "client" where we install everything.
+You can open IPython console to run Python producer and consumer
+
+```
+$ ./wrappers/ipython
+
+In [1]: from playground import *
+
+In [2]: send_timestamps(producer, 'tiny')
+Message delivered to tiny [0]
+Message delivered to tiny [0]
+...
+```
+
+And to read the messages
+
+```
+$ ./wrappers/ipython
+
+In [1]: from playground import *
+
+In [2]: consume(consumer, 'tiny')
+Received message: 2019-08-31T17:26:13.812724
+Received message: 2019-08-31T17:26:14.814812
+...
+```
