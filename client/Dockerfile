@@ -1,5 +1,15 @@
 FROM python:3
 
+# Install required packages
+RUN set -eux; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends \
+    libsnappy-dev \
+    liblz4-dev \
+    librocksdb-dev; \
+    rm -rf /var/lib/apt/lists/*;
+
 # Add a user with an explicit UID/GID
 RUN set -eux; \
     groupadd client --gid=1000; \
@@ -17,7 +27,9 @@ RUN set -eux; \
     ./env/bin/pip install \
     ipython \
     confluent-kafka \
-    zk-shell
+    zk-shell \
+    asgiref \
+    'faust[rocksdb]'
 
 # Prepare environment
 ENV PATH=/app/env/bin:/usr/local/bin:/usr/bin:/bin

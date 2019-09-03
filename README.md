@@ -309,3 +309,14 @@ Received message: 2019-08-31T17:26:13.812724
 Received message: 2019-08-31T17:26:14.814812
 ...
 ```
+
+Kafka and Faust
+---------------
+
+Faust is a stream processing library, porting the ideas from Kafka Streams
+to Python. It's asyncio-based, and whenever I need to brush up my asyncio
+knowledge, I go to
+[Python & Async Simplified](https://www.aeracode.org/2018/02/19/python-async-simplified/)
+blog post
+
+[Faust Documentation →](https://faust.readthedocs.io/en/latest/)

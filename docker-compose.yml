@@ -52,3 +52,5 @@ services:
     volumes:
       - ./playground:/app/playground
       - ./client-home:/home/client
+    ports:
+      - 127.0.0.1:6066:6066

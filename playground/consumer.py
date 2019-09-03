@@ -1,6 +1,7 @@
 from confluent_kafka import Consumer
 
-
+# More on different options for consumer
+# https://kafka.apache.org/documentation/#consumerconfigs
 COMSUMER_CONFIG = {
     "bootstrap.servers": "kafka1:9092,kafka2:9092",
     "group.id": "playground",
