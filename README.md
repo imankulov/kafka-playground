@@ -320,3 +320,62 @@ knowledge, I go to
 blog post
 
 [Faust Documentation →](https://faust.readthedocs.io/en/latest/)
+
+On automatic topic creation
+---------------------------
+
+It's not quite clear from Faust documentation when topic are created and which
+parameters are applied to them.
+
+As I learned, topic are only created explicitly when you mark them as "internal"
+with the flag. For example, this way topic will be created with 10 partitions.
+All other parameters will be taken from Kafka broker configuration.
+
+```python
+topic_foo = app.topic("foo", partitions=10, internal=True)
+```
+
+For external topic (internal flag is not set), topic will be created
+automatically with the settings, defined in broker configs. 
+
+```python
+topic_bar = app.topic("bar", partitions=10)
+```
+
+For this case the parameter "partitions" will be quite misleadingly ignored,
+and topic will be created with as many partitions as defined in `num.partitions`
+broker settings.
+
+Single-event processing. Multiplier
+-----------------------------------
+
+In the file [fa.py](./playground/fa.py) defined a "mult" (multiplier)
+application. The application uses two topics, x and 2x. Counter sends
+incrementing integers to Kafka topic "x". Multiplier reads them, multiply by
+two and writes to the topic "2x". Logger prints them down.
+
+Run Faust worker
+
+```bash
+✗ ./wrappers/faust -A playground.fa:mult worker
+┌ƒaµS† v1.7.4─┬──────────────────────────────────────────┐
+│ id          │ mult                                     │
+...
+│ appdir      │ /app/mult-data/v1                        │
+└─────────────┴──────────────────────────────────────────┘
+[2019-09-04 22:39:34,667: WARNING]: b'2'
+[2019-09-04 22:39:35,645: WARNING]: b'4'
+[2019-09-04 22:39:36,647: WARNING]: b'6'
+[2019-09-04 22:39:37,667: WARNING]: b'8'
+...
+```
+
+To make sure that messages actually appear in Kafka topics, you can also
+run a console consumers.
+
+```bash
+./wrappers/kafka-console-consumer.sh --bootstrap-server 127.0.0.1:9092 --topic=2x --group=foo
+``` 
+
+If you start two console consumers, you'll see how messages re-distributed between them.
+
