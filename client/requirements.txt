@@ -1,0 +1,5 @@
+ipython
+confluent-kafka
+zk-shell
+asgiref
+faust[rocksdb]

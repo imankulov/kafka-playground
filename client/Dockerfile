@@ -22,14 +22,10 @@ USER client
 WORKDIR /app
 
 # Install packages with pip into a virtual environment
+COPY requirements.txt /tmp/requirements.txt
 RUN set -eux; \
     python -m venv ./env; \
-    ./env/bin/pip install \
-    ipython \
-    confluent-kafka \
-    zk-shell \
-    asgiref \
-    'faust[rocksdb]'
+    ./env/bin/pip install -r /tmp/requirements.txt
 
 # Prepare environment
 ENV PATH=/app/env/bin:/usr/local/bin:/usr/bin:/bin
