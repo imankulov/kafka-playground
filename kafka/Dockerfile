@@ -1,6 +1,9 @@
 FROM openjdk:8-jre-slim
 
 ENV KAFKA_BROKER_ID=0 \
+    KAFKA_DEFAULT_REPLICATION_FACTOR=2 \
+    KAFKA_NUM_PARTITIONS=4 \
+    KAFKA_ALLOW_AUTO_CREATE_TOPICS=true \
     KAFKA_ZOOKEEPER_CONNECT=zoo1:2181,zoo2:2181,zoo3:2181/kafka \
     KAFKA_LOG_DIRS=/kafka-logs
 
@@ -43,5 +46,8 @@ ENV PATH=$PATH:/$DISTRO_NAME/bin
 USER kafka
 CMD kafka-server-start.sh config/server.properties \
     --override broker.id=${KAFKA_BROKER_ID} \
+    --override default.replication.factor=${KAFKA_DEFAULT_REPLICATION_FACTOR} \
+    --override num.partitions=${KAFKA_NUM_PARTITIONS} \
+    --override allow.auto.create.topics=${KAFKA_ALLOW_AUTO_CREATE_TOPICS} \
     --override log.dirs=${KAFKA_LOG_DIRS} \
     --override zookeeper.connect=${KAFKA_ZOOKEEPER_CONNECT}
