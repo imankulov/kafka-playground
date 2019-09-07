@@ -336,7 +336,7 @@ topic_foo = app.topic("foo", partitions=10, internal=True)
 ```
 
 For external topic (internal flag is not set), topic will be created
-automatically with the settings, defined in broker configs. 
+automatically with the settings, defined in broker configs.
 
 ```python
 topic_bar = app.topic("bar", partitions=10)
@@ -349,7 +349,7 @@ broker settings.
 Single-event processing. Multiplier
 -----------------------------------
 
-In the file [fa.py](./playground/fa.py) defined a "mult" (multiplier)
+In the file [multiplier.py](playground/multiplier.py) defined a "multiplier"
 application. The application uses two topics, x and 2x. Counter sends
 incrementing integers to Kafka topic "x". Multiplier reads them, multiply by
 two and writes to the topic "2x". Logger prints them down.
@@ -357,7 +357,7 @@ two and writes to the topic "2x". Logger prints them down.
 Run Faust worker
 
 ```bash
-✗ ./wrappers/faust -A playground.fa:mult worker
+$ ./wrappers/faust -A playground.multiplier:app worker
 ┌ƒaµS† v1.7.4─┬──────────────────────────────────────────┐
 │ id          │ mult                                     │
 ...
@@ -375,7 +375,6 @@ run a console consumers.
 
 ```bash
 ./wrappers/kafka-console-consumer.sh --bootstrap-server 127.0.0.1:9092 --topic=2x --group=foo
-``` 
+```
 
 If you start two console consumers, you'll see how messages re-distributed between them.
-
