@@ -1,5 +1,6 @@
-ipython
-confluent-kafka
-zk-shell
 asgiref
+confluent-kafka
+faker
 faust[rocksdb]
+ipython
+zk-shell
