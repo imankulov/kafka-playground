@@ -378,3 +378,81 @@ run a console consumers.
 ```
 
 If you start two console consumers, you'll see how messages re-distributed between them.
+
+
+Custom types. Simple aggregation with tables. Table changelog
+-------------------------------------------------------------
+
+File `signups.py` shows how structured messages are sent over the channel
+and how simple aggregation with tables work. To make sure we can use
+aggregation with tables, we need to partition records deterministically.
+In our case we partition them by the first letter of the login.
+
+Start the worker.
+
+```bash
+./wrappers/faust -A playground.signups:app worker
+```
+
+Observe the contents of the topic "signups"
+
+```bash
+./wrappers/kafka-console-consumer.sh --bootstrap-server 127.0.0.1:9092 --topic=signups --group=foo
+{"username": "kevinross", "name": "Mary Sanders", "sex": "F", "address": "USS Campbell\nFPO AA 64409", "mail": "richard87@gmail.com", "birthdate": "2011-07-10T00:00:00", "__faust": {"ns": "playground.signups.Profile"}}
+{"username": "andrew20", "name": "Susan Michael", "sex": "F", "address": "41187 Anderson Brooks Suite 703\nPort Josephmouth, WI 70930", "mail": "sandra25@gmail.com", "birthdate": "1939-07-20T00:00:00", "__faust": {"ns": "playground.signups.Profile"}}
+{"username": "janet38", "name": "Dana Yang", "sex": "F", "address": "981 Kimberly Summit Suite 611\nMelissaport, KS 46828", "mail": "meredith80@hotmail.com", "birthdate": "1955-07-31T00:00:00", "__faust": {"ns": "playground.signups.Profile"}}
+...
+```
+
+We use `--group` to consume all partitions of the topic.
+
+The table will generate a changelog. The name of the changelog is
+"<app_name>-<table_name>-changelog", or "signups-signups_per_letter-changelog"
+in our case. Observe the contents of the changelog.
+
+```bash
+./wrappers/kafka-console-consumer.sh --bootstrap-server 127.0.0.1:9092 --topic=signups-signups_per_letter-changelog --group=foo --property print.key=true
+"j"     79
+"r"     35
+"n"     17
+"r"     36
+"o"     6
+"r"     37
+...
+```
+
+Note that we use "print.key" property to show the letters (that's how
+we aggregate).
+
+We can also observe the content of the tables, stored in the client host.
+
+```bash
+./wrapper/bash
+```
+
+Tables are created in the filesystem, and partitioned by the same number of
+partitions as topics themselves.
+
+```bash
+$ ls signups-data/v1/tables/
+signups_per_letter-0.db
+signups_per_letter-1.db
+...
+signups_per_letter-7.db
+```
+
+We can dump tables contents.
+
+```bash
+$ ldb --db=signups-data/v1/tables/signups_per_letter-0.db scan
+"k" : 92
+"l" : 70
+"m" : 125
+__faust : 286
+
+$ ldb --db=signups-data/v1/tables/signups_per_letter-1.db scan
+"d" : 91
+"t" : 75
+"v" : 37
+__faust : 202
+```

@@ -7,7 +7,8 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
     libsnappy-dev \
     liblz4-dev \
-    librocksdb-dev; \
+    librocksdb-dev\
+    rocksdb-tools; \
     rm -rf /var/lib/apt/lists/*;
 
 # Add a user with an explicit UID/GID
