@@ -456,3 +456,46 @@ $ ldb --db=signups-data/v1/tables/signups_per_letter-1.db scan
 "v" : 37
 __faust : 202
 ```
+
+
+Windowing
+---------
+
+[More about Windowing Faust](https://faust.readthedocs.io/en/latest/userguide/tables.html#windowing)
+
+Everything is pretty much the same, except that the aggregation goes for two
+parameters: key and time. In our case there is a table
+"signups_per_10s" which aggregates signups for overlapping interval of
+10 seconds.
+
+Representation of data in the table.
+
+```bash
+$ ldb --db=signups-data/v1/tables/signups_per_10-0.db scan  | head
+
+["k", [1568235160.0, 1568235169.9]] : 1
+["k", [1568235165.0, 1568235174.9]] : 1
+["k", [1568235170.0, 1568235179.9]] : 1
+```
+
+Representation of data in the stream
+
+```bash
+./wrappers/kafka-console-consumer.sh --bootstrap-server 127.0.0.1:9092 \
+    --topic=signups-signups_per_10-changelog \
+    --group=foo \
+    --property print.key=true
+
+["e", [1568235680.0, 1568235689.9]]     1
+["e", [1568235685.0, 1568235694.9]]     1
+["w", [1568235680.0, 1568235689.9]]     1
+["w", [1568235685.0, 1568235694.9]]     1
+["c", [1568235685.0, 1568235694.9]]     1
+["c", [1568235690.0, 1568235699.9]]     1
+["p", [1568235690.0, 1568235699.9]]     1
+["p", [1568235695.0, 1568235704.9]]     1
+["c", [1568235690.0, 1568235699.9]]     2
+...
+```
+
+Note how each value is written twice, once per each overlapping key.

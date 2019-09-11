@@ -33,8 +33,10 @@ class Profile(Record):
 
 topic_signups = app.topic("signups", retention=3600, internal=True, value_type=Profile)
 
-
 signups_per_letter = app.Table("signups_per_letter", default=int)
+signups_per_10s = app.Table("signups_per_10", default=int).hopping(
+    size=10, step=5, expires=300
+)
 
 
 @app.task
@@ -55,3 +57,4 @@ async def signups_counter(profiles: faust.Stream):
     """
     async for profile in profiles:  # type: Profile
         signups_per_letter[profile.username[0]] += 1
+        signups_per_10s[profile.username[0]] += 1
