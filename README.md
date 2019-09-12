@@ -499,3 +499,59 @@ Representation of data in the stream
 ```
 
 Note how each value is written twice, once per each overlapping key.
+
+
+Kafka Connect
+-------------
+
+Start Kafka Connect with
+
+```bash
+docker-compose up connect
+```
+
+Perform queries to the service with Curl or Postman. You should see zero
+connectors and following list of connector plugins
+
+```json
+[
+    {
+        "class": "io.debezium.connector.mysql.MySqlConnector",
+        "type": "source",
+        "version": "0.9.5.Final"
+    },
+    {
+        "class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
+        "type": "sink",
+        "version": "2.3.0"
+    },
+    {
+        "class": "org.apache.kafka.connect.file.FileStreamSourceConnector",
+        "type": "source",
+        "version": "2.3.0"
+    }
+]
+```
+
+You can also see that once connect started, it created three new topics:
+
+```bash
+$ ./wrappers/kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic connect-configs
+Topic:connect-configs   PartitionCount:1        ReplicationFactor:1     Configs:cleanup.policy=compact,segment.bytes=1073741824
+```
+
+```bash
+$ ./wrappers/kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic connect-offsets
+Topic:connect-offsets   PartitionCount:25       ReplicationFactor:1     Configs:cleanup.policy=compact,segment.bytes=1073741824
+        Topic: connect-offsets  Partition: 0    Leader: 1       Replicas: 1     Isr: 1
+        Topic: connect-offsets  Partition: 1    Leader: 2       Replicas: 2     Isr: 2
+...
+```
+
+```bash
+$ ./wrappers/kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic connect-status
+Topic:connect-status    PartitionCount:5        ReplicationFactor:1     Configs:cleanup.policy=compact,segment.bytes=1073741824
+        Topic: connect-status   Partition: 0    Leader: 2       Replicas: 2     Isr: 2
+        Topic: connect-status   Partition: 1    Leader: 1       Replicas: 1     Isr: 1
+...
+```

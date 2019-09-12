@@ -46,6 +46,12 @@ services:
     volumes:
       - ./data/kafka2/kafka-logs:/kafka-logs:delegated
 
+  connect:
+    image: imankulov/kafka-connect
+    build: connect
+    ports:
+      - 127.0.0.1:8083:8083
+
   client:
     image: imankulov/kafka-client
     build: client
