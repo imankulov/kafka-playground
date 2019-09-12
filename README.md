@@ -10,13 +10,21 @@ To start all the services, run:
 docker-compose up -d
 ```
 
-This will start three zookeeper instances, and the first zookeeper instance
-will expose its port as 127.0.0.1:2181.
+It will start following
 
-It will also start two Kafka instances. They listen for the port 0.0.0.0:9092,
-none of them is exposed outside.
+- Three zookeeper instances, and the first zookeeper instance
+  will expose its port as 127.0.0.1:2181.
 
-Also it will start a "client" host with some pre-installed libraries.
+- Two Kafka instances. They listen for the port 0.0.0.0:9092,
+  none of them is exposed outside.
+
+- One Kafka Connect instance exposing port 8083 to the main host.
+
+- One MySQL instance to play with Debezium connector. You can get access
+  to it with MySQL client as "mysql -h 127.0.0.1 -P 3306 -u root" without
+  entering password (the password is empty).
+
+- A "client" host with some pre-installed libraries.
 
 
 Wrappers
@@ -554,4 +562,37 @@ Topic:connect-status    PartitionCount:5        ReplicationFactor:1     Configs:
         Topic: connect-status   Partition: 0    Leader: 2       Replicas: 2     Isr: 2
         Topic: connect-status   Partition: 1    Leader: 1       Replicas: 1     Isr: 1
 ...
+```
+
+Kafka Connect. MySQL connector
+------------------------------
+
+Make sure that you have binlogs enabled on the MySQL side.
+
+```mysql
+mysql> show variables like "%log_bin%";
++---------------------------------+-----------------------------+
+| Variable_name                   | Value                       |
++---------------------------------+-----------------------------+
+| log_bin                         | ON                          |
+| log_bin_basename                | /var/lib/mysql/binlog       |
+| log_bin_index                   | /var/lib/mysql/binlog.index |
+| log_bin_trust_function_creators | OFF                         |
+| log_bin_use_v1_row_events       | OFF                         |
+| sql_log_bin                     | ON                          |
++---------------------------------+-----------------------------+
+6 rows in set (0.00 sec)
+```
+
+
+```mysql
+mysql> show variables like "%binlog%";
++------------------------------------------------+----------------------+
+| Variable_name                                  | Value                |
++------------------------------------------------+----------------------+
+...
+| binlog_format                                  | ROW                  |
+...
++------------------------------------------------+----------------------+
+27 rows in set (0.01 sec)
 ```

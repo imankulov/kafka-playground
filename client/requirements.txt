@@ -3,4 +3,6 @@ confluent-kafka
 faker
 faust[rocksdb]
 ipython
+PyMySQL
+SQLAlchemy
 zk-shell
