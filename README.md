@@ -21,7 +21,7 @@ It will start following
 - One Kafka Connect instance exposing port 8083 to the main host.
 
 - One MySQL instance to play with Debezium connector. You can get access
-  to it with MySQL client as "mysql -h 127.0.0.1 -P 3306 -u root" without
+  to it with MySQL client as "mysql -h 127.0.0.1 -u root" without
   entering password (the password is empty).
 
 - A "client" host with some pre-installed libraries.
@@ -567,7 +567,9 @@ Topic:connect-status    PartitionCount:5        ReplicationFactor:1     Configs:
 Kafka Connect. MySQL connector
 ------------------------------
 
-Make sure that you have binlogs enabled on the MySQL side.
+
+Make sure that you have binlogs enabled on the MySQL side. It should be
+enabled here by default though.
 
 ```mysql
 mysql> show variables like "%log_bin%";
@@ -596,3 +598,327 @@ mysql> show variables like "%binlog%";
 +------------------------------------------------+----------------------+
 27 rows in set (0.01 sec)
 ```
+
+Create a new user to connect to MySQL.
+
+```bash
+mysql -h 127.0.0.1 -u root
+```
+
+```mysql
+CREATE USER 'debezium'@'%' IDENTIFIED WITH mysql_native_password BY 'password';
+GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'debezium'@'%';
+```
+
+At the moment with MySQL 8.x you cannot use existing users and creating a new
+user with "mysql_native_password" is essential. See the discussion in
+https://github.com/shyiko/mysql-binlog-connector-java/issues/240.
+
+Create a new database "playground"
+
+```mysql
+CREATE DATABASE playground DEFAULT CHARSET utf8mb4;
+```
+
+Run the MySQL signups script. The script will connect as root to MySQL server,
+create there a new table "profiles" if necessary, and start adding record
+to the table, one by one.
+
+```bash
+$ ./wrappers/mysql_signups.py
+Profile(username=peggy06, email=ygreen@gmail.com)
+Profile(username=brettrichards, email=sarahthompson@yahoo.com)
+Profile(username=joseph29, email=hopkinsholly@yahoo.com)
+```
+
+It's time to create a new connector. You can use Postman requests
+from https://documenter.getpostman.com/view/4176727/SVmsUf7n.
+
+Get the list of connector plugins. You should get the `io.debezium.connector.mysql.MySqlConnector`
+among them.
+
+Get the list of connectors. It should be empty initially.
+
+Before creating a connector start collecting logs from the connect instance.
+If something goes wrong, you'll see it.
+
+```bash
+docker-compose logs -f --tail=0 connect
+```
+
+Then create a new connector. The connector should be successfully created. If
+any problem occur, fix the issue and restart the connector with "Restart MySQL
+connector" Postman command.
+
+Explore the list of topics.
+
+```bash
+./wrappers/kafka-topics.sh --bootstrap-server kafka1:9092 --list
+__consumer_offsets
+connect-configs
+connect-offsets
+connect-status
+dbhistory.playground
+playground
+playground.playground.profiles
+...
+```
+
+The latest topic ("playground.playground.profiles") contains the live stream
+of events from the database. Go ahead to consume that topic:
+
+```bash
+./wrappers/kafka-console-consumer.sh \
+    --bootstrap-server 127.0.0.1:9092 \
+    --topic=playground.playground.profiles \
+    --group=foo \
+    --property print.key=true \
+    --from-beginning
+```
+
+Formatted key looks like this
+
+```json
+{
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "type": "int32",
+        "optional": false,
+        "field": "id"
+      }
+    ],
+    "optional": false,
+    "name": "playground.playground.profiles.Key"
+  },
+  "payload": {
+    "id": 140
+  }
+}
+```
+
+And the value looks like this
+
+```json
+{
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "int32",
+            "optional": false,
+            "field": "id"
+          },
+          {
+            "type": "int64",
+            "optional": true,
+            "name": "io.debezium.time.Timestamp",
+            "version": 1,
+            "default": 0,
+            "field": "created"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "username"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "name"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "email"
+          },
+          {
+            "type": "int32",
+            "optional": true,
+            "name": "io.debezium.time.Date",
+            "version": 1,
+            "field": "birthdate"
+          }
+        ],
+        "optional": true,
+        "name": "playground.playground.profiles.Value",
+        "field": "before"
+      },
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "int32",
+            "optional": false,
+            "field": "id"
+          },
+          {
+            "type": "int64",
+            "optional": true,
+            "name": "io.debezium.time.Timestamp",
+            "version": 1,
+            "default": 0,
+            "field": "created"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "username"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "name"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "email"
+          },
+          {
+            "type": "int32",
+            "optional": true,
+            "name": "io.debezium.time.Date",
+            "version": 1,
+            "field": "birthdate"
+          }
+        ],
+        "optional": true,
+        "name": "playground.playground.profiles.Value",
+        "field": "after"
+      },
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "string",
+            "optional": true,
+            "field": "version"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "connector"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "name"
+          },
+          {
+            "type": "int64",
+            "optional": false,
+            "field": "server_id"
+          },
+          {
+            "type": "int64",
+            "optional": false,
+            "field": "ts_sec"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "gtid"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "file"
+          },
+          {
+            "type": "int64",
+            "optional": false,
+            "field": "pos"
+          },
+          {
+            "type": "int32",
+            "optional": false,
+            "field": "row"
+          },
+          {
+            "type": "boolean",
+            "optional": true,
+            "default": false,
+            "field": "snapshot"
+          },
+          {
+            "type": "int64",
+            "optional": true,
+            "field": "thread"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "db"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "table"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "query"
+          }
+        ],
+        "optional": false,
+        "name": "io.debezium.connector.mysql.Source",
+        "field": "source"
+      },
+      {
+        "type": "string",
+        "optional": false,
+        "field": "op"
+      },
+      {
+        "type": "int64",
+        "optional": true,
+        "field": "ts_ms"
+      }
+    ],
+    "optional": false,
+    "name": "playground.playground.profiles.Envelope"
+  },
+  "payload": {
+    "before": null,
+    "after": {
+      "id": 140,
+      "created": 1568540744000,
+      "username": "coxanna",
+      "name": "John Dixon",
+      "email": "sheastephanie@yahoo.com",
+      "birthdate": -15790
+    },
+    "source": {
+      "version": "0.9.5.Final",
+      "connector": "mysql",
+      "name": "playground",
+      "server_id": 1,
+      "ts_sec": 1568540744,
+      "gtid": null,
+      "file": "binlog.000002",
+      "pos": 54429,
+      "row": 0,
+      "snapshot": false,
+      "thread": 18,
+      "db": "playground",
+      "table": "profiles",
+      "query": null
+    },
+    "op": "c",
+    "ts_ms": 1568540744870
+  }
+}
+```
+
+The output is large, but it's quite easy to understand and safe to parse.
+Overall, it contains two top-level keys: payload and schema. The payload
+contains three fields: "before", "after" and "source", and the "schema"
+contains the schema for all three of them. Including schema in every payload
+can be disabled with config options "key.converter.schemas.enable" and
+"value.converter.schemas.enable".

@@ -1,8 +1,9 @@
 asgiref
+click
 confluent-kafka
 faker
 faust[rocksdb]
 ipython
-PyMySQL
+PyMySQL[rsa]
 SQLAlchemy
 zk-shell

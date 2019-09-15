@@ -28,8 +28,10 @@ RUN set -eux; \
     python -m venv ./env; \
     ./env/bin/pip install -r /tmp/requirements.txt
 
-# Prepare environment
-ENV PATH=/app/env/bin:/usr/local/bin:/usr/bin:/bin
+# Prepare environment:
+# - add virtualenv bin directory
+# - add playground directory
+ENV PATH=/app/env/bin:/app/playground:/usr/local/bin:/usr/bin:/bin
 
 # - /app/playground will be mapped to ./playground
 # - /home/client will be mapped to ./client-home
